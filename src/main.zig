@@ -61,32 +61,159 @@ const Character = struct {
         self.secondary_abilities.max_health.legs = @intCast(6 + @as(i64, @intFromFloat(std.math.ceil(@as(f64, @floatFromInt(self.ability_scores.constitution)) * 1.5))));
         self.secondary_abilities.max_health.stomach = 5 + self.ability_scores.constitution;
     }
-
     pub fn print(self: Character) !void {
         const stdout = std.io.getStdOut().writer();
-        try stdout.print("Name: {s}  Race: {s}  Gender: {s}\nVisual description: {s}\nBackstory: {s}\n", .{
+
+        // Header section with character basics
+        try stdout.print(
+            \\.------------------------------------------------------------------------------.
+            \\|                              CHARACTER SHEET                                 |
+            \\|------------------------------------------------------------------------------|
+            \\
+            \\  Name: {s}
+            \\  Race: {s}                                Gender: {s}
+            \\
+            \\--------------------------------------------------------------------------------
+            \\  DESCRIPTION
+            \\  {s}
+            \\
+            \\  BACKSTORY
+            \\  {s}
+            \\
+            \\--------------------------------------------------------------------------------
+            \\
+        , .{
             self.characteristics.name,
             self.characteristics.race,
             self.characteristics.gender,
             self.characteristics.visual_description,
             self.characteristics.backstory,
         });
-        try stdout.print("Strength: {}\nDexterity: {}\nConstitution: {}\nIntelligence: {}\nWisdom: {}\nCharisma: {}\n", .{
+
+        // Ability Scores section
+        try stdout.print(
+            \\  ABILITY SCORES                 SECONDARY ABILITIES
+            \\  --------------                 -------------------
+            \\  Strength:     {:>2}               Carry Capacity:  {:>3}
+            \\  Dexterity:    {:>2}               Speed:          {:>3}
+            \\  Constitution: {:>2}               Luck:           {:>3}
+            \\  Intelligence: {:>2}               Magical Power:  {:>3}
+            \\  Wisdom:       {:>2}               Physical Power: {:>3}
+            \\  Charisma:     {:>2}
+            \\
+            \\--------------------------------------------------------------------------------
+            \\
+        , .{
             self.ability_scores.strength,
+            self.secondary_abilities.carry_capacity,
             self.ability_scores.dexterity,
+            self.secondary_abilities.speed,
             self.ability_scores.constitution,
+            self.secondary_abilities.luck,
             self.ability_scores.intelligence,
+            self.secondary_abilities.magical_power,
             self.ability_scores.wisdom,
+            self.secondary_abilities.physical_power,
             self.ability_scores.charisma,
         });
-        try stdout.print("Carry capacity: {}\nLuck: {}\nMagical power: {}\nPhysical power: {}\nSpeed: {}\n", .{
-            self.secondary_abilities.carry_capacity,
-            self.secondary_abilities.luck,
-            self.secondary_abilities.magical_power,
-            self.secondary_abilities.physical_power,
-            self.secondary_abilities.speed,
+
+        // Health section
+        try stdout.print(
+            \\  HEALTH POINTS                   RESOURCES
+            \\  -------------                   ---------
+            \\  Head:     {:>3}                   Gold:       {:>6}
+            \\  Chest:    {:>3}                   Experience: {:>6}
+            \\  Stomach:  {:>3}
+            \\  Arms:     {:>3}
+            \\  Legs:     {:>3}
+            \\
+            \\--------------------------------------------------------------------------------
+            \\
+        , .{
+            self.secondary_abilities.max_health.head,
+            self.gold,
+            self.secondary_abilities.max_health.chest,
+            self.experience,
+            self.secondary_abilities.max_health.stomach,
+            self.secondary_abilities.max_health.arms,
+            self.secondary_abilities.max_health.legs,
         });
+
+        // Skills section
+        try stdout.print(
+            \\  SKILLS
+            \\  ------
+            \\
+        , .{});
+
+        for (self.skills) |skill| {
+            try stdout.print("  {s:<20} Level: {}\n", .{ skill.name, skill.level });
+        }
+
+        // Inventory section
+        try stdout.print(
+            \\
+            \\--------------------------------------------------------------------------------
+            \\  INVENTORY
+            \\  ---------
+            \\
+        , .{});
+
+        for (self.inventory) |item| {
+            try stdout.print("  {s}\n", .{item.name});
+            switch (item.data) {
+                .Weapon => |weapon| {
+                    try stdout.print("    Type: Weapon    Damage: {:>2}  Range: {:>2}  Weight: {:>2}\n", .{
+                        weapon.damage,
+                        weapon.range,
+                        weapon.weight,
+                    });
+                    try stdout.print("    Usage: {s}  Attribute: {s}\n", .{
+                        @tagName(weapon.usage),
+                        @tagName(weapon.attribute),
+                    });
+                },
+                .Armor => |armor| {
+                    try stdout.print("    Type: Armor    Defense: {:>2}  Weight: {:>2}\n", .{
+                        armor.defense,
+                        armor.weight,
+                    });
+                },
+                .Consumable => |consumable| {
+                    try stdout.print("    Type: Consumable    Effect: {s}\n", .{consumable.effect});
+                    try stdout.print("    Duration: {}\n", .{consumable.duration});
+                },
+            }
+            try stdout.print("\n", .{});
+        }
+
+        try stdout.print("--------------------------------------------------------------------------------\n", .{});
     }
+    // pub fn print(self: Character) !void {
+    //     const stdout = std.io.getStdOut().writer();
+    //     try stdout.print("Name: {s}  Race: {s}  Gender: {s}\nVisual description: {s}\nBackstory: {s}\n\n", .{
+    //         self.characteristics.name,
+    //         self.characteristics.race,
+    //         self.characteristics.gender,
+    //         self.characteristics.visual_description,
+    //         self.characteristics.backstory,
+    //     });
+    //     try stdout.print("Strength: {}\nDexterity: {}\nConstitution: {}\nIntelligence: {}\nWisdom: {}\nCharisma: {}\n\n", .{
+    //         self.ability_scores.strength,
+    //         self.ability_scores.dexterity,
+    //         self.ability_scores.constitution,
+    //         self.ability_scores.intelligence,
+    //         self.ability_scores.wisdom,
+    //         self.ability_scores.charisma,
+    //     });
+    //     try stdout.print("Carry capacity: {}\nLuck: {}\nMagical power: {}\nPhysical power: {}\nSpeed: {}\n\n", .{
+    //         self.secondary_abilities.carry_capacity,
+    //         self.secondary_abilities.luck,
+    //         self.secondary_abilities.magical_power,
+    //         self.secondary_abilities.physical_power,
+    //         self.secondary_abilities.speed,
+    //     });
+    // }
 
     pub fn deinit(self: *Character) void {
         self.allocator.free(self.skills);
@@ -195,5 +322,6 @@ pub fn main() !void {
     defer hero.deinit();
 
     hero.calculateSecondaryAbilities();
+    hero.secondary_abilities.max_health.chest -= 20;
     try hero.print();
 }
