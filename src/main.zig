@@ -1,25 +1,65 @@
 const std = @import("std");
 
 const Character = struct {
+    allocator: std.mem.Allocator,
     characteristics: Characteristics,
     ability_scores: AbilityScores,
-    secundary_abilities: SecundaryAbilities,
+    secondary_abilities: SecondaryAbilities,
     skills: []Skill,
     gold: i64,
     experience: i64,
     inventory: []Item,
 
+    pub fn init(allocator: std.mem.Allocator) !Character {
+        return Character{
+            .allocator = allocator,
+            .characteristics = Characteristics{
+                .name = "",
+                .race = "",
+                .gender = "",
+                .visual_description = "",
+                .backstory = "",
+            },
+            .ability_scores = AbilityScores{
+                .strength = 1,
+                .dexterity = 1,
+                .constitution = 1,
+                .intelligence = 1,
+                .wisdom = 1,
+                .charisma = 1,
+            },
+            .secondary_abilities = SecondaryAbilities{
+                // Initialize secondary abilities
+                .max_health = .{
+                    .head = 0,
+                    .chest = 0,
+                    .stomach = 0,
+                    .arms = 0,
+                    .legs = 0,
+                },
+                .luck = 0,
+                .carry_capacity = 0,
+                .speed = 0,
+                .magical_power = 0,
+                .physical_power = 0,
+            },
+            .skills = &[_]Skill{}, // Empty slice for now
+            .gold = 0,
+            .experience = 0,
+            .inventory = &[_]Item{}, // Empty slice for now
+        };
+    }
     pub fn calculateSecondaryAbilities(self: *Character) void {
-        self.secundary_abilities.carry_capacity = self.ability_scores.strength * 10;
-        self.secundary_abilities.luck = self.ability_scores.charisma;
-        self.secundary_abilities.magical_power = self.ability_scores.inteligence + std.math.ceil(self.ability_scores.wisdom / 2.0);
-        self.secundary_abilities.physical_power = self.ability_scores.strength + std.math.ceil(self.ability_scores.dexterity / 2.0);
-        self.secundary_abilities.speed = std.math.ceil((self.ability_scores.dexterity + self.ability_scores.wisdom) / 2.0);
-        self.secundary_abilities.max_health.arms = 4 + self.ability_scores.constitution * 1;
-        self.secundary_abilities.max_health.chest = 10 + self.ability_scores.constitution * 2;
-        self.secundary_abilities.max_health.head = 5 + self.ability_scores.constitution * 1;
-        self.secundary_abilities.max_health.legs = 6 + std.math.ceil(self.ability_scores.constitution * 1.5);
-        self.secundary_abilities.max_health.stomach = 5 + self.ability_scores.constitution * 1;
+        self.secondary_abilities.carry_capacity = @intCast(self.ability_scores.strength * 10);
+        self.secondary_abilities.luck = self.ability_scores.charisma;
+        self.secondary_abilities.magical_power = @intCast(self.ability_scores.intelligence + @as(i64, @intFromFloat(std.math.ceil(@as(f64, @floatFromInt(self.ability_scores.wisdom)) / 2.0))));
+        self.secondary_abilities.physical_power = @intCast(self.ability_scores.strength + @as(i64, @intFromFloat(std.math.ceil(@as(f64, @floatFromInt(self.ability_scores.dexterity)) / 2.0))));
+        self.secondary_abilities.speed = @intCast(@as(i64, @intFromFloat(std.math.ceil(@as(f64, @floatFromInt(self.ability_scores.dexterity + self.ability_scores.wisdom)) / 2.0))));
+        self.secondary_abilities.max_health.arms = 4 + self.ability_scores.constitution;
+        self.secondary_abilities.max_health.chest = 10 + self.ability_scores.constitution * 2;
+        self.secondary_abilities.max_health.head = 5 + self.ability_scores.constitution;
+        self.secondary_abilities.max_health.legs = @intCast(6 + @as(i64, @intFromFloat(std.math.ceil(@as(f64, @floatFromInt(self.ability_scores.constitution)) * 1.5))));
+        self.secondary_abilities.max_health.stomach = 5 + self.ability_scores.constitution;
     }
 
     pub fn print(self: Character) !void {
@@ -28,17 +68,29 @@ const Character = struct {
             self.characteristics.name,
             self.characteristics.race,
             self.characteristics.gender,
-            self.characteristics.visual_discription,
+            self.characteristics.visual_description,
             self.characteristics.backstory,
         });
-        try stdout.print("Strength: {}\nDexterity: {}\nConstitution: {}\nInteligence: {}\nWisdom: {}\nCharisma: {}\n", .{
+        try stdout.print("Strength: {}\nDexterity: {}\nConstitution: {}\nIntelligence: {}\nWisdom: {}\nCharisma: {}\n", .{
             self.ability_scores.strength,
             self.ability_scores.dexterity,
             self.ability_scores.constitution,
-            self.ability_scores.inteligence,
+            self.ability_scores.intelligence,
             self.ability_scores.wisdom,
             self.ability_scores.charisma,
         });
+        try stdout.print("Carry capacity: {}\nLuck: {}\nMagical power: {}\nPhysical power: {}\nSpeed: {}\n", .{
+            self.secondary_abilities.carry_capacity,
+            self.secondary_abilities.luck,
+            self.secondary_abilities.magical_power,
+            self.secondary_abilities.physical_power,
+            self.secondary_abilities.speed,
+        });
+    }
+
+    pub fn deinit(self: *Character) void {
+        self.allocator.free(self.skills);
+        self.allocator.free(self.inventory);
     }
 };
 
@@ -54,7 +106,7 @@ const Characteristics = struct {
     name: []const u8,
     race: []const u8,
     gender: []const u8,
-    visual_discription: []const u8,
+    visual_description: []const u8,
     backstory: []const u8,
 };
 
@@ -62,12 +114,12 @@ const AbilityScores = struct {
     strength: i64,
     dexterity: i64,
     constitution: i64,
-    inteligence: i64,
+    intelligence: i64,
     wisdom: i64,
     charisma: i64,
 };
 
-const SecundaryAbilities = struct {
+const SecondaryAbilities = struct {
     max_health: Health,
     luck: i64,
     carry_capacity: i64,
@@ -102,7 +154,7 @@ const ItemData = union(ItemType) {
 const Weapon = struct {
     damage: i64,
     usage: WeaponUsage,
-    atribute: WeaponAtribute,
+    attribute: WeaponAtribute,
     range: i64,
     weight: i64,
 };
@@ -133,80 +185,15 @@ const Consumable = struct {
 
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
     try stdout.print("\n", .{});
 
-    var hero: Character = .{
-        .characteristics = .{
-            .name = "Gimly",
-            .gender = "Male",
-            .race = "Dwarf",
-            .backstory = "He was just born",
-            .visual_discription = "smol",
-        },
-        .ability_scores = .{
-            .strength = 1,
-            .dexterity = 1,
-            .constitution = 1,
-            .inteligence = 1,
-            .wisdom = 1,
-            .charisma = 1,
-        },
-        .experience = 0,
-        .gold = 0,
-        .secundary_abilities = .{
-            .luck = 1,
-            .carry_capacity = 10,
-            .magical_power = 1,
-            .max_health = .{
-                .arms = 1,
-                .chest = 1,
-                .head = 1,
-                .legs = 1,
-                .stomach = 1,
-            },
-            .physical_power = 1,
-            .speed = 1,
-        },
-        .skills = &[_]Skill{
-            Skill{ .name = "Swordsmanship", .level = 1 },
-            Skill{ .name = "Tracking", .level = 1 },
-        },
-        .inventory = &[_]Item{
-            Item{
-                .name = "Long Sword",
-                .item_type = ItemType.Weapon,
-                .data = ItemData{
-                    .Weapon = Weapon{
-                        .damage = 2,
-                        .range = 1,
-                        .atribute = .strength,
-                        .usage = .two_hands,
-                        .weight = 10,
-                    },
-                },
-            },
-            Item{
-                .name = "Ranger's Cloak",
-                .item_type = ItemType.Armor,
-                .data = ItemData{
-                    .Armor = Armor{
-                        .defense = 5,
-                        .weight = 3,
-                    },
-                },
-            },
-            Item{
-                .name = "Healing Potion",
-                .item_type = ItemType.Consumable,
-                .data = ItemData{
-                    .Consumable = Consumable{
-                        .effect = "Restores 20 HP",
-                        .duration = 0,
-                    },
-                },
-            },
-        },
-    };
+    const allocator = gpa.allocator();
+
+    var hero = try Character.init(allocator);
+    defer hero.deinit();
+
     hero.calculateSecondaryAbilities();
     try hero.print();
 }
