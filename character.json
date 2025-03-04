@@ -1,0 +1,78 @@
+{
+    "characteristics": {
+        "name": "Bob",
+        "race": "Dwarf",
+        "gender": "Male",
+        "visual_description": "Smol",
+        "backstory": "No backstory. He was just born. Although he managed to slay a dragon in that short time which is no short task. Bob even 5 minutes after his birth was very capable.No backstory. He was just born. Although he managed to slay a dragon in that short time which is no short task. Bob even 5 minutes after his birth was very capable."
+    },
+    "ability_scores": {
+        "strength": 6,
+        "dexterity": 1,
+        "constitution": 3,
+        "intelligence": 12,
+        "wisdom": 8,
+        "charisma": 13
+    },
+    "secondary_abilities": {
+        "max_health": {
+            "head": 8,
+            "chest": -4,
+            "stomach": 8,
+            "arms": 7,
+            "legs": 11
+        },
+        "luck": 13,
+        "carry_capacity": 60,
+        "speed": 5,
+        "magical_power": 16,
+        "physical_power": 7
+    },
+    "skills": [
+        {
+            "name": "Bowling",
+            "level": 3
+        },
+        {
+            "name": "Archery",
+            "level": 12
+        },
+        {
+            "name": "Sneaking",
+            "level": 5
+        },
+        {
+            "name": "Bakery",
+            "level": 9
+        }
+    ],
+    "gold": 0,
+    "experience": 0,
+    "inventory": [
+        {
+            "name": "Battle Axe",
+            "amount": 1,
+            "item_type": "Weapon",
+            "data": {
+                "Weapon": {
+                    "damage": 8,
+                    "usage": "two_hands",
+                    "attribute": "strength",
+                    "range": 1,
+                    "weight": 7
+                }
+            }
+        },
+        {
+            "name": "Chain Mail",
+            "amount": 1,
+            "item_type": "Armor",
+            "data": {
+                "Armor": {
+                    "defense": 15,
+                    "weight": 20
+                }
+            }
+        }
+    ]
+}
