@@ -63,7 +63,7 @@ pub fn main() !void {
         },
     });
 
-    hero.calculateSecondaryAbilities();
+    hero.calculateSecondaryAtributes();
     hero.secondary_abilities.max_health.chest -= 20;
     try hero.print();
 
@@ -74,6 +74,5 @@ pub fn main() !void {
     var loaded_hero = try ch.Character.loadFromJson(allocator, "character.json");
     defer loaded_hero.deinit();
 
-    // Print loaded character
     try loaded_hero.print();
 }

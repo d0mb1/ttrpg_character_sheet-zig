@@ -1,6 +1,7 @@
 const std = @import("std");
 const fns = @import("fns.zig");
 
+// character struct
 pub const Character = struct {
     allocator: std.mem.Allocator,
     characteristics: Characteristics,
@@ -50,7 +51,8 @@ pub const Character = struct {
         };
     }
 
-    pub fn calculateSecondaryAbilities(self: *Character) void {
+    // calculate secondary atributes absed on the primary ones
+    pub fn calculateSecondaryAtributes(self: *Character) void {
         self.secondary_abilities.carry_capacity = @intCast(self.ability_scores.strength * 10);
         self.secondary_abilities.luck = self.ability_scores.charisma;
         self.secondary_abilities.magical_power = @intCast(self.ability_scores.intelligence + @as(i64, @intFromFloat(std.math.ceil(@as(f64, @floatFromInt(self.ability_scores.wisdom)) / 2.0))));
@@ -65,7 +67,7 @@ pub const Character = struct {
     pub fn print(self: Character) !void {
         const stdout = std.io.getStdOut().writer();
 
-        // Header section with character basics
+        // Character sheet design
         try stdout.print(
             \\.------------------------------------------------------------------------------.
             \\|                              CHARACTER SHEET                                 |
@@ -97,7 +99,6 @@ pub const Character = struct {
             \\
         , .{});
 
-        // Ability Scores section
         try stdout.print(
             \\  ABILITY SCORES                          SECONDARY ABILITIES
             \\  --------------                          -------------------
@@ -122,7 +123,6 @@ pub const Character = struct {
             fns.diceAttrNotation(self.ability_scores.charisma),
         });
 
-        // Health section
         try stdout.print(
             \\  HEALTH POINTS                   RESOURCES
             \\  -------------                   ---------
@@ -144,7 +144,6 @@ pub const Character = struct {
             self.secondary_abilities.max_health.legs,
         });
 
-        // Skills section
         try stdout.print(
             \\  SKILLS
             \\  ------
@@ -155,7 +154,6 @@ pub const Character = struct {
             try stdout.print("  {s:<20} Level: {: >3} {s}\n", .{ skill.name, skill.level, fns.diceSkillNotation(skill.level) });
         }
 
-        // Inventory section
         try stdout.print(
             \\
             \\--------------------------------------------------------------------------------
@@ -195,14 +193,15 @@ pub const Character = struct {
         try stdout.print("--------------------------------------------------------------------------------\n", .{});
     }
 
+    // deinit the character
+    // need to change it to arena allocator since it will be easier to edinit it all at once
     pub fn deinit(self: *Character) void {
-        // Free characteristics strings
         self.allocator.free(self.characteristics.name);
         self.allocator.free(self.characteristics.race);
         self.allocator.free(self.characteristics.gender);
         self.allocator.free(self.characteristics.visual_description);
         self.allocator.free(self.characteristics.backstory);
-        // Free skills
+
         for (self.skills) |skill| {
             self.allocator.free(skill.name);
         }
@@ -210,7 +209,6 @@ pub const Character = struct {
             self.allocator.free(self.skills);
         }
 
-        // Free inventory
         for (self.inventory) |item| {
             self.allocator.free(item.name);
             if (item.data == .Consumable) {
@@ -297,7 +295,7 @@ pub const Character = struct {
     }
 
     pub fn removeItem(self: *Character, item_name: []const u8) !void {
-        // Validate input
+        // Validate inputs
         if (item_name.len == 0) {
             return error.EmptyItemName;
         }
@@ -580,192 +578,6 @@ pub const Character = struct {
 
         return character;
     }
-    // pub fn loadFromJson(allocator: std.mem.Allocator, file_path: []const u8) !Character {
-    //     // Read the file
-    //     const file = try std.fs.cwd().openFile(file_path, .{});
-    //     defer file.close();
-    //
-    //     const file_size = try file.getEndPos();
-    //     const buffer = try allocator.alloc(u8, file_size);
-    //     defer allocator.free(buffer);
-    //     _ = try file.readAll(buffer);
-    //
-    //     // Parse JSON
-    //     var parser = std.json.Parser.init(allocator, false);
-    //     defer parser.deinit();
-    //
-    //     var tree = try parser.parse(buffer);
-    //     defer tree.deinit();
-    //
-    //     const root = tree.root;
-    //
-    //     // Create character from parsed data
-    //     var character = Character{
-    //         .allocator = allocator,
-    //         .characteristics = Characteristics{
-    //             .name = try allocator.dupe(u8, root.Object.get("characteristics").?.Object.get("name").?.String),
-    //             .race = try allocator.dupe(u8, root.Object.get("characteristics").?.Object.get("race").?.String),
-    //             .gender = try allocator.dupe(u8, root.Object.get("characteristics").?.Object.get("gender").?.String),
-    //             .visual_description = try allocator.dupe(u8, root.Object.get("characteristics").?.Object.get("visual_description").?.String),
-    //             .backstory = try allocator.dupe(u8, root.Object.get("characteristics").?.Object.get("backstory").?.String),
-    //         },
-    //         .ability_scores = AbilityScores{
-    //             .strength = root.Object.get("ability_scores").?.Object.get("strength").?.Integer,
-    //             .dexterity = root.Object.get("ability_scores").?.Object.get("dexterity").?.Integer,
-    //             .constitution = root.Object.get("ability_scores").?.Object.get("constitution").?.Integer,
-    //             .intelligence = root.Object.get("ability_scores").?.Object.get("intelligence").?.Integer,
-    //             .wisdom = root.Object.get("ability_scores").?.Object.get("wisdom").?.Integer,
-    //             .charisma = root.Object.get("ability_scores").?.Object.get("charisma").?.Integer,
-    //         },
-    //         .secondary_abilities = SecondaryAbilities{
-    //             .max_health = Health{
-    //                 .head = root.Object.get("secondary_abilities").?.Object.get("max_health").?.Object.get("head").?.Integer,
-    //                 .chest = root.Object.get("secondary_abilities").?.Object.get("max_health").?.Object.get("chest").?.Integer,
-    //                 .stomach = root.Object.get("secondary_abilities").?.Object.get("max_health").?.Object.get("stomach").?.Integer,
-    //                 .arms = root.Object.get("secondary_abilities").?.Object.get("max_health").?.Object.get("arms").?.Integer,
-    //                 .legs = root.Object.get("secondary_abilities").?.Object.get("max_health").?.Object.get("legs").?.Integer,
-    //             },
-    //             .luck = root.Object.get("secondary_abilities").?.Object.get("luck").?.Integer,
-    //             .carry_capacity = root.Object.get("secondary_abilities").?.Object.get("carry_capacity").?.Integer,
-    //             .speed = root.Object.get("secondary_abilities").?.Object.get("speed").?.Integer,
-    //             .magical_power = root.Object.get("secondary_abilities").?.Object.get("magical_power").?.Integer,
-    //             .physical_power = root.Object.get("secondary_abilities").?.Object.get("physical_power").?.Integer,
-    //         },
-    //         .gold = root.Object.get("gold").?.Integer,
-    //         .experience = root.Object.get("experience").?.Integer,
-    //         .skills = &[_]Skill{},
-    //         .inventory = &[_]Item{},
-    //     };
-    //
-    //     // Load skills
-    //     const skills_array = root.Object.get("skills").?.Array;
-    //     var skills = try allocator.alloc(Skill, skills_array.items.len);
-    //     for (skills_array.items, 0..) |skill, i| {
-    //         skills[i] = Skill{
-    //             .name = try allocator.dupe(u8, skill.Object.get("name").?.String),
-    //             .level = skill.Object.get("level").?.Integer,
-    //         };
-    //     }
-    //     character.skills = skills;
-    //
-    //     // Load inventory
-    //     const inventory_array = root.Object.get("inventory").?.Array;
-    //     var inventory = try allocator.alloc(Item, inventory_array.items.len);
-    //     for (inventory_array.items, 0..) |item, i| {
-    //         const item_type_str = item.Object.get("item_type").?.String;
-    //         const item_type = std.meta.stringToEnum(ItemType, item_type_str) orelse return error.InvalidItemType;
-    //
-    //         inventory[i] = Item{
-    //             .name = try allocator.dupe(u8, item.Object.get("name").?.String),
-    //             .amount = item.Object.get("amount").?.Integer,
-    //             .item_type = item_type,
-    //             .data = switch (item_type) {
-    //                 .Weapon => ItemData{
-    //                     .Weapon = Weapon{
-    //                         .damage = item.Object.get("data").?.Object.get("damage").?.Integer,
-    //                         .range = item.Object.get("data").?.Object.get("range").?.Integer,
-    //                         .weight = item.Object.get("data").?.Object.get("weight").?.Integer,
-    //                         .usage = std.meta.stringToEnum(WeaponUsage, item.Object.get("data").?.Object.get("usage").?.String) orelse return error.InvalidWeaponUsage,
-    //                         .attribute = std.meta.stringToEnum(WeaponAtribute, item.Object.get("data").?.Object.get("attribute").?.String) orelse return error.InvalidWeaponAttribute,
-    //                     },
-    //                 },
-    //                 .Armor => ItemData{
-    //                     .Armor = Armor{
-    //                         .defense = item.Object.get("data").?.Object.get("defense").?.Integer,
-    //                         .weight = item.Object.get("data").?.Object.get("weight").?.Integer,
-    //                     },
-    //                 },
-    //                 .Consumable => ItemData{
-    //                     .Consumable = Consumable{
-    //                         .effect = try allocator.dupe(u8, item.Object.get("data").?.Object.get("effect").?.String),
-    //                         .duration = item.Object.get("data").?.Object.get("duration").?.Integer,
-    //                     },
-    //                 },
-    //             },
-    //         };
-    //     }
-    //     character.inventory = inventory;
-    //
-    //     return character;
-    // }
-    //
-    // pub fn loadFromJson(allocator: std.mem.Allocator, file_path: []const u8) !Character {
-    //     // Read the file
-    //     const file = try std.fs.cwd().openFile(file_path, .{});
-    //     defer file.close();
-    //
-    //     const file_size = try file.getEndPos();
-    //     const buffer = try allocator.alloc(u8, file_size);
-    //     defer allocator.free(buffer);
-    //     _ = try file.readAll(buffer);
-    //
-    //     // Parse JSON
-    //     var stream = std.json.TokenStream.init(buffer);
-    //     const options = std.json.ParseOptions{
-    //         .allocator = allocator,
-    //         .ignore_unknown_fields = true,
-    //     };
-    //
-    //     const CharacterJson = struct {
-    //         characteristics: Characteristics,
-    //         ability_scores: AbilityScores,
-    //         secondary_abilities: SecondaryAbilities,
-    //         skills: []Skill,
-    //         gold: i64,
-    //         experience: i64,
-    //         inventory: []Item,
-    //     };
-    //
-    //     const parsed = try std.json.parse(CharacterJson, &stream, options);
-    //     defer std.json.parseFree(CharacterJson, parsed, options);
-    //
-    //     // Create character from parsed data
-    //     var character = Character{
-    //         .allocator = allocator,
-    //         .characteristics = Characteristics{
-    //             .name = try allocator.dupe(u8, parsed.characteristics.name),
-    //             .race = try allocator.dupe(u8, parsed.characteristics.race),
-    //             .gender = try allocator.dupe(u8, parsed.characteristics.gender),
-    //             .visual_description = try allocator.dupe(u8, parsed.characteristics.visual_description),
-    //             .backstory = try allocator.dupe(u8, parsed.characteristics.backstory),
-    //         },
-    //         .ability_scores = parsed.ability_scores,
-    //         .secondary_abilities = parsed.secondary_abilities,
-    //         .skills = try allocator.alloc(Skill, parsed.skills.len),
-    //         .gold = parsed.gold,
-    //         .experience = parsed.experience,
-    //         .inventory = try allocator.alloc(Item, parsed.inventory.len),
-    //     };
-    //
-    //     // Copy skills
-    //     for (parsed.skills, 0..) |skill, i| {
-    //         character.skills[i] = Skill{
-    //             .name = try allocator.dupe(u8, skill.name),
-    //             .level = skill.level,
-    //         };
-    //     }
-    //
-    //     // Copy inventory
-    //     for (parsed.inventory, 0..) |item, i| {
-    //         character.inventory[i] = Item{
-    //             .name = try allocator.dupe(u8, item.name),
-    //             .amount = item.amount,
-    //             .item_type = item.item_type,
-    //             .data = switch (item.data) {
-    //                 .Weapon => |weapon| ItemData{ .Weapon = weapon },
-    //                 .Armor => |armor| ItemData{ .Armor = armor },
-    //                 .Consumable => |consumable| ItemData{
-    //                     .Consumable = Consumable{
-    //                         .effect = try allocator.dupe(u8, consumable.effect),
-    //                         .duration = consumable.duration,
-    //                     },
-    //                 },
-    //             },
-    //         };
-    //     }
-    //
-    //     return character;
-    // }
 };
 const Health = struct {
     head: i64,
